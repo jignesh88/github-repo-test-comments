@@ -10,6 +10,8 @@ public class RetailDbContext : DbContext
     }
 
     public DbSet<Product> Products { get; set; }
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderItem> OrderItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,6 +26,20 @@ public class RetailDbContext : DbContext
             entity.Property(e => e.Price).HasPrecision(18, 2);
             entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
             entity.HasIndex(e => e.Sku).IsUnique();
+        });
+
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
+            entity.Property(e => e.ShippingAddress).IsRequired().HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Price).HasPrecision(18, 2);
         });
     }
 }

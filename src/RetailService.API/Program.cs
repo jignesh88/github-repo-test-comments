@@ -28,6 +28,7 @@ builder.Services.AddDbContext<RetailDbContext>(options =>
 
 // Register repositories
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
 // Configure CORS
 builder.Services.AddCors(options =>
