@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using RetailService.Core.Interfaces;
+using RetailService.Core.Services;
 using RetailService.Infrastructure.Data;
 using RetailService.Infrastructure.Repositories;
+using RetailService.Infrastructure.Services;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +31,9 @@ builder.Services.AddDbContext<RetailDbContext>(options =>
 // Register repositories
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+// Register services
+builder.Services.AddScoped<IProductService, ProductService>();
 
 // Configure CORS
 builder.Services.AddCors(options =>
