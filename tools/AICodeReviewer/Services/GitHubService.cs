@@ -21,37 +21,55 @@ public class GitHubService
 
     public async Task<Dictionary<string, string>> GetPullRequestChangesAsync(int prNumber)
     {
+        // Get PR details to get the head ref
+        var pullRequest = await _client.PullRequest.Get(_owner, _repo, prNumber);
+        var headRef = pullRequest.Head.Ref;
+
         var files = await _client.PullRequest.Files(_owner, _repo, prNumber);
         var changedFiles = new Dictionary<string, string>();
+
+        Console.WriteLine($"PR head ref: {headRef}");
+        Console.WriteLine($"Found {files.Count} files in PR");
 
         foreach (var file in files)
         {
             // Skip deleted files and non-code files
             if (file.Status == "removed" || !IsCodeFile(file.FileName))
+            {
+                Console.WriteLine($"Skipping {file.FileName} (status: {file.Status})");
                 continue;
+            }
 
             try
             {
-                // Get the file content from the PR branch
+                Console.WriteLine($"Fetching content for: {file.FileName}");
+
+                // Get the file content from the PR's head branch
                 var fileContent = await _client.Repository.Content.GetAllContentsByRef(
                     _owner,
                     _repo,
                     file.FileName,
-                    file.Sha
+                    headRef
                 );
 
                 if (fileContent.Count > 0)
                 {
                     var content = fileContent[0].Content;
                     changedFiles[file.FileName] = content;
+                    Console.WriteLine($"Successfully fetched {file.FileName} ({content.Length} chars)");
                 }
             }
-            catch (NotFoundException)
+            catch (NotFoundException ex)
             {
-                Console.WriteLine($"File not found: {file.FileName}");
+                Console.WriteLine($"File not found: {file.FileName} - {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching {file.FileName}: {ex.Message}");
             }
         }
 
+        Console.WriteLine($"Total files fetched: {changedFiles.Count}");
         return changedFiles;
     }
 
