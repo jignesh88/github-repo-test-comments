@@ -90,17 +90,8 @@ public class GitHubService
             }
         };
 
-        // Add inline comments
-        foreach (var comment in review.Comments)
-        {
-            var reviewComment = new DraftPullRequestReviewComment(
-                comment.Comment + (comment.Suggestion != null ? $"\n\n**Suggestion:**\n```csharp\n{comment.Suggestion}\n```" : ""),
-                comment.FilePath,
-                comment.Line
-            );
-
-            pullRequestReviewCreate.Comments.Add(reviewComment);
-        }
+        // Note: Inline comments are not included because GitHub requires diff positions,
+        // not file line numbers. All detailed comments are included in the review body instead.
 
         await _client.PullRequest.Review.Create(_owner, _repo, prNumber, pullRequestReviewCreate);
     }
@@ -134,6 +125,38 @@ public class GitHubService
                 comment += $"- {area}\n";
             }
             comment += "\n";
+        }
+
+        // Add detailed comments grouped by file
+        if (review.Comments.Any())
+        {
+            comment += "### Detailed Code Review Comments\n\n";
+
+            var commentsByFile = review.Comments.GroupBy(c => c.FilePath);
+            foreach (var fileGroup in commentsByFile)
+            {
+                comment += $"#### 📄 `{fileGroup.Key}`\n\n";
+
+                foreach (var reviewComment in fileGroup)
+                {
+                    var severityEmoji = reviewComment.Severity switch
+                    {
+                        "error" => "🔴",
+                        "warning" => "⚠️",
+                        _ => "ℹ️"
+                    };
+
+                    comment += $"{severityEmoji} **{reviewComment.Category}** (Line {reviewComment.Line})\n";
+                    comment += $"{reviewComment.Comment}\n";
+
+                    if (!string.IsNullOrEmpty(reviewComment.Suggestion))
+                    {
+                        comment += $"\n**Suggestion:**\n```csharp\n{reviewComment.Suggestion}\n```\n";
+                    }
+
+                    comment += "\n";
+                }
+            }
         }
 
         comment += $@"
